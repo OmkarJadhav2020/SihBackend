@@ -41,7 +41,7 @@ class ProjectProposal(models.Model):
     organization = models.TextField()
     start_date = models.DateField()
     end_date = models.DateField()
-
+    approved = models.BooleanField(default=False)
     # Table data 
     capital_expenditure = models.DecimalField(max_digits=10, decimal_places=2)
     total_capital = models.DecimalField(max_digits=10, decimal_places=2)

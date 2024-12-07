@@ -40,15 +40,32 @@ class GetList(APIView):
 
 
 class ProposalViewSet(APIView):
-    def get(self,request):
-        return Response({"msg":"this is working"})
-    
-    def post(self,request):
+
+    def get(self, request):
+        proposals = ProjectProposal.objects.filter(approved=False).values()
+        return Response({"data": proposals})
+
+    def post(self, request):
         serializer = ProjectProposalSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({'message': 'Project Proposal Submitted Successfully!', 'data': serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def delete(self, request, proposal_id):
+        print(request)
+        try:
+            proposal = ProjectProposal.objects.get(id=proposal_id)
+            proposal.delete()
+            return Response({'message': 'Proposal deleted successfully!'}, status=status.HTTP_204_NO_CONTENT)
+        except ProjectProposal.DoesNotExist:
+            return Response({'error': 'Proposal not found!'}, status=status.HTTP_404_NOT_FOUND)
 
-        
-
+    def patch(self, request, proposal_id):
+        try:
+            proposal = ProjectProposal.objects.get(id=proposal_id)
+            proposal.approved = True  # Update the `approved` field
+            proposal.save()  # Save the changes
+            return Response({'message': 'Proposal approved successfully!', 'data': {'id': proposal.id, 'approved': proposal.approved}}, status=status.HTTP_200_OK)
+        except ProjectProposal.DoesNotExist:
+            return Response({'error': 'Proposal not found!'}, status=status.HTTP_404_NOT_FOUND)

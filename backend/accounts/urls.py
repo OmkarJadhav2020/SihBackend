@@ -5,6 +5,7 @@ urlpatterns = [
     path('login/', LoginView.as_view(), name='login'),
     path('me/', UserInfoView.as_view(), name='user_info'),
     path('proposals/', ProposalViewSet.as_view(), name='proposal_info'),
+    path('proposals/<int:proposal_id>/', ProposalViewSet.as_view(), name='proposal_delete'),
     path('getlist/', GetList.as_view(), name='getList'),
     # path('projects/', ProjectViewSet.as_view(), name='project_info'),
     # path('reports/', ReportViewSet.as_view(), name='report_info'),
