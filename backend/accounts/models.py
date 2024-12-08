@@ -53,3 +53,31 @@ class ProjectProposal(models.Model):
 
     def __str__(self):
         return f"Project Proposal by {self.agency_name} - {self.coordinator.username}"
+
+
+
+class Project(models.Model):
+    
+    STATUS_CHOICES = [
+        ('Processing', 'Processing'),
+        ('Success', 'Success'),
+        ('In Review', 'In Review'),
+        ('Cancelled', 'Cancelled'),
+    ]
+    title = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
+    proposal = models.ForeignKey(ProjectProposal, on_delete=models.SET_NULL, null=True, blank=True, related_name='related_projects')
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Processing')
+    start_date = models.DateField()
+    end_date = models.DateField()
+    current_progress_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
+    progress_status = models.TextField(null=True, blank=True)
+    duration = models.CharField(max_length=50)
+    assigned_investigators = models.ManyToManyField(User, related_name='user_projects')
+    budget = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True,default=0)  
+    funds_used = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)  
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} (ID: {self.id})"
