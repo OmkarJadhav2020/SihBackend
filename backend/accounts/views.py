@@ -49,10 +49,12 @@ class ProposalViewSet(APIView):
         return Response({"data": proposals})
 
     def post(self, request):
+        print(request.data)
         serializer = ProjectProposalSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response({'message': 'Project Proposal Submitted Successfully!', 'data': serializer.data}, status=status.HTTP_201_CREATED)
+        # print(serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, proposal_id):
@@ -95,3 +97,12 @@ class ProjectViewSet(APIView):
             serializer.save()
             return Response({'message': 'Project Added Successfully!', 'data': serializer.data}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class ProjectInfo(APIView):
+    def post(self,request):
+        projectid = request.data["id"]
+        print(projectid)
+        project = Project.objects.filter(id = projectid).values()
+        if project:
+            return Response(project[0])
+        return Response({"msg" : "data doesn't exist"})
