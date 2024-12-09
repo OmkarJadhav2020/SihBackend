@@ -4,10 +4,10 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
-from .serializers import UserSerializer, ProjectProposalSerializer, ProjectSerializer
+from .serializers import UserSerializer, ProjectProposalSerializer, ProjectSerializer,ReportSerializer
 from rest_framework.authentication import TokenAuthentication
 from rest_framework import viewsets
-from .models import ProjectProposal
+from .models import ProjectProposal,Report
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from .models import User,Project
@@ -106,3 +106,13 @@ class ProjectInfo(APIView):
         if project:
             return Response(project[0])
         return Response({"msg" : "data doesn't exist"})
+    
+class ReportView(APIView):
+    def post(self,request):
+        
+        serializer = ReportSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'message': 'Report  Submitted Successfully!', 'data': serializer.data}, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
