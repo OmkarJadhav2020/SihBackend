@@ -54,7 +54,24 @@ class ProjectProposal(models.Model):
     def __str__(self):
         return f"Project Proposal by {self.agency_name} - {self.coordinator.username}"
 
+from datetime import datetime
 
+
+class Fund(models.Model):
+    project = models.ForeignKey('Project', on_delete=models.CASCADE, related_name='funds')
+    investigator = models.ForeignKey('User', on_delete=models.CASCADE, related_name='funds')
+    fund_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    gst_rate = models.DecimalField(max_digits=5, decimal_places=2, default=18.0)
+    other_tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=5.0)
+    gst = models.DecimalField(max_digits=15, decimal_places=2)
+    other_taxes = models.DecimalField(max_digits=15, decimal_places=2)
+    remaining_amount = models.DecimalField(max_digits=15, decimal_places=2)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Fund for Project {self.project.id} by Investigator {self.investigator.id}"
+    
 
 class Project(models.Model):
     
@@ -73,7 +90,7 @@ class Project(models.Model):
     current_progress_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0.00)
     progress_status = models.TextField(null=True, blank=True)
     duration = models.CharField(max_length=50)
-    assigned_investigators = models.ManyToManyField(User, related_name='user_projects')
+    assigned_investigators = models.ManyToManyField(User, related_name='user_projects',blank=True)
     budget = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True,default=0)  
     funds_used = models.DecimalField(max_digits=15, decimal_places=2, default=0.00)  
     created_at = models.DateTimeField(auto_now_add=True)
@@ -91,6 +108,26 @@ class Report(models.Model):
 
     def __str__(self):
         return self.name
+
+from django.db import models
+from .models import Project
+
+class TimelineTask(models.Model):
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('In Progress', 'In Progress'),
+        ('Completed', 'Completed'),
+    ]
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='timeline_tasks')
+    task = models.CharField(max_length=255)
+    startDate = models.DateField()
+    endDate = models.DateField()
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Pending')
+
+    def __str__(self):
+        return f"{self.task} ({self.status}) - Project: {self.project.title}"
+
 
 
 
@@ -185,29 +222,6 @@ class QuarterlyExpenditureStatement(models.Model):
 
 
 
-class ProjectCompletionReport(models.Model):
-    project = models.OneToOneField(Project, on_delete=models.CASCADE, related_name="completion_report")
-    title = models.CharField(max_length=255)
-    project_code = models.CharField(max_length=100)
-    date_of_commencement = models.DateField()
-    approved_completion_date = models.DateField()
-    actual_completion_date = models.DateField()
-    objectives = models.TextField()
-    work_programme = models.TextField()
-    details_of_work_done = models.TextField()
-    objectives_fulfilled = models.TextField()
-    reasons_for_incomplete_scope = models.TextField(blank=True, null=True)
-    need_for_further_study = models.TextField(blank=True, null=True)
-    conclusions_and_recommendations = models.TextField()
-    scope_of_application = models.TextField()
-    associated_persons = models.TextField()  # Names and expertise
-    final_expenditure_statement = models.FileField(upload_to="completion_reports/expenditure_statements/")
-
-    def __str__(self):
-        return f"Completion Report for {self.title}"
-
-
-
 
 
 class FinanceAnalysis(models.Model):
@@ -252,4 +266,297 @@ class IncrementRequest(models.Model):
 
     def __str__(self):
         return f"{self.increment_type} Increment Request for Project {self.project.title}"
+    
 
+# from django.db import models
+
+# class ProjectCompletionReport(models.Model):
+#     projectid = models.ForeignKey(Project,on_delete=models.CASCADE, null=True, blank=True, related_name='completionprojects')
+#     projectTitle = models.CharField(max_length=255)  # Corresponds to 'projectTitle'
+#     projectCode = models.CharField(max_length=100)  # Corresponds to 'projectCode'
+#     startDate = models.DateField()  # Corresponds to 'startDate'
+#     approvedCompletionDate = models.DateField()  # Corresponds to 'approvedCompletionDate'
+#     actualCompletionDate = models.DateField()  # Corresponds to 'actualCompletionDate'
+#     objectives = models.TextField()  # Corresponds to 'objectives'
+#     workProgramme = models.TextField()  # Corresponds to 'workProgramme'
+#     workDone = models.TextField()  # Corresponds to 'workDone'
+#     objectivesFulfilled = models.TextField()  # Corresponds to 'objectivesFulfilled'
+#     reasonsForNotCovering = models.TextField(blank=True, null=True)  # Corresponds to 'reasonsForNotCovering'
+#     needForFurtherStudies = models.TextField(blank=True, null=True)  # Corresponds to 'needForFurtherStudies'
+#     conclusions = models.TextField()  # Corresponds to 'conclusions'
+#     scopeOfApplication = models.TextField()  # Corresponds to 'scopeOfApplication'
+#     associatedPersons = models.TextField()  # Corresponds to 'associatedPersons'
+#     expenditureStatement = models.TextField()  # Corresponds to 'expenditureStatement'
+
+#     def __str__(self):
+#         return f"{self.projectTitle} ({self.projectCode})"
+
+
+from django.db import models
+
+class ProjectRevision(models.Model):
+    projectid = models.ForeignKey(Project,on_delete=models.CASCADE, null=True, blank=True, related_name='projectREvision')
+    project_name = models.CharField(max_length=255)  # Name of the project
+    project_code = models.CharField(max_length=100)  # Project code
+    principal_agency = models.CharField(max_length=255)  # Principal implementing agency
+    project_leader = models.CharField(max_length=255)  # Project leader/coordinator
+    start_date = models.DateField()  # Date of start
+    completion_date = models.DateField()  # Scheduled date of completion
+    approved_objective = models.TextField()  # Approved objective
+    approved_work_programme = models.TextField()  # Approved work programme
+    work_done_details = models.TextField()  # Details of work done
+    total_approved_cost = models.DecimalField(max_digits=15, decimal_places=2)  # Total approved cost
+    revised_time_schedule = models.TextField(blank=True, null=True)  # Revised time schedule
+    actual_expenditure = models.DecimalField(max_digits=15, decimal_places=2)  # Actual expenditure
+    revised_cost_and_justification = models.TextField()  # Revised cost and justification
+
+    def __str__(self):
+        return f"{self.project_name} ({self.project_code})"
+
+
+
+
+#fund requestion
+from django.db import models
+
+class ProjectFund(models.Model):
+    projectid = models.ForeignKey(Project,on_delete=models.CASCADE)
+    projectName = models.CharField(max_length=255)
+    projectCode = models.CharField(max_length=100)
+    companyName = models.CharField(max_length=255)
+    statementPeriod = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.projectName} ({self.projectCode})"
+
+class Item(models.Model):
+    project = models.ForeignKey(ProjectFund, related_name="items", on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    approvedCost = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    fundReceived = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    interestEarned = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    expenditureIncurred = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    fundProvision = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    fundRequired = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    balanceFund = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+
+    def __str__(self):
+        return f"{self.name} - {self.project.projectName}"
+    
+
+
+
+from django.db import models
+
+class EndorsementForm(models.Model):
+    projectid = models.IntegerField()
+    projectTitle = models.CharField(max_length=255)
+    projectLeader = models.CharField(max_length=255)
+    infrastructureFacilities = models.BooleanField(default=False)
+    transportManpower = models.BooleanField(default=False)
+    equipmentProcurement = models.BooleanField(default=False)
+    financialResponsibility = models.BooleanField(default=False)
+    headOfInstitution = models.CharField(max_length=255)
+    seal = models.CharField(max_length=255)
+    date = models.DateField()
+    place = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.projectTitle
+
+
+
+from django.db import models
+
+class QuarterlyStatusReport(models.Model):
+    projectName = models.CharField(max_length=255)
+    projectCode = models.CharField(max_length=255, blank=True, null=True)
+    progress = models.TextField()
+    principalImplementingAgency = models.CharField(max_length=255)
+    subImplementingAgency = models.CharField(max_length=255)
+    projectCoordinator = models.CharField(max_length=255)
+    startDate = models.DateField()
+    approvedCompletionDate = models.DateField()
+    workDone = models.TextField()
+    slippage = models.TextField(blank=True, null=True)
+    correctiveActions = models.TextField()
+    workNextQuarter = models.TextField()
+    barChart = models.FileField(upload_to="bar_charts/")
+    formIII = models.FileField(upload_to="forms/")
+    formIV = models.FileField(upload_to="forms/")
+
+    def __str__(self):
+        return self.projectName
+
+
+
+from django.db import models
+
+class ProjectCompletionReport2(models.Model):
+    projectid = models.IntegerField()
+    title = models.CharField(max_length=255)
+    projectCode = models.CharField(max_length=255)
+    commencementDate = models.DateField()
+    approvedCompletionDate = models.DateField()
+    actualCompletionDate = models.DateField()
+    objectives = models.TextField()
+    workProgram = models.TextField()
+    workDetails = models.TextField()
+    objectivesFulfilled = models.TextField()
+    reasonsForSlippage = models.TextField(blank=True, null=True)
+    furtherStudiesNeeded = models.TextField()
+    conclusionsAndRecommendations = models.TextField()
+    scopeOfApplication = models.TextField()
+    associatedPersons = models.TextField()
+    finalExpenditure = models.TextField(blank=True, null=True)
+    formIII = models.FileField(upload_to="forms/")
+    formIV = models.FileField(upload_to="forms/")
+
+    def __str__(self):
+        return self.title
+
+
+
+from django.db import models
+
+class ProjectExtensionReport(models.Model):
+    projectid = models.IntegerField()
+    projectName = models.CharField(max_length=255)
+    projectCode = models.CharField(max_length=255)
+    implementingAgency = models.CharField(max_length=255)
+    projectLeader = models.CharField(max_length=255)
+    startDate = models.DateField()
+    scheduledCompletionDate = models.DateField()
+    approvedObjectives = models.TextField()
+    approvedWorkProgram = models.TextField()
+    workDetails = models.TextField()
+    revisedBarChart = models.FileField(upload_to="bar_charts/", blank=True, null=True)
+    extensionReason = models.TextField()
+    projectCost = models.TextField()
+    actualExpenditure = models.TextField()
+    formIII = models.FileField(upload_to="forms/", blank=True, null=True)
+    formIV = models.FileField(upload_to="forms/", blank=True, null=True)
+    formV = models.FileField(upload_to="forms/", blank=True, null=True)
+
+    def __str__(self):
+        return self.projectName
+
+
+
+
+
+from django.db import models
+
+class ProjectRevisionTwo(models.Model):
+    projectid = models.IntegerField()
+    projectName = models.CharField(max_length=255)
+    projectCode = models.CharField(max_length=255)
+    implementingAgency = models.CharField(max_length=255)
+    projectLeader = models.CharField(max_length=255)
+    startDate = models.DateField()
+    scheduledCompletionDate = models.DateField()
+    approvedObjective = models.TextField()
+    approvedWorkProgram = models.TextField()
+    workDetails = models.TextField()
+    revisedCost = models.TextField()
+    approvedCost = models.TextField()
+    revisedSchedule = models.TextField()
+    actualExpenditure = models.FloatField()
+    formIII = models.FileField(upload_to="forms/", blank=True, null=True)
+    formIV = models.FileField(upload_to="forms/", blank=True, null=True)
+    justification = models.TextField()
+
+    def __str__(self):
+        return self.projectName
+
+
+
+from django.db import models
+
+class ProjectEquipment(models.Model):
+    projectid = models.IntegerField()
+    projectName = models.CharField(max_length=255)
+    projectCode = models.CharField(max_length=255)
+    principalAgency = models.CharField(max_length=255)
+    subAgency = models.CharField(max_length=255)
+    justification = models.TextField()
+
+    def __str__(self):
+        return self.projectName
+
+
+class EquipmentDetail(models.Model):
+    project = models.ForeignKey(ProjectEquipment, related_name='equipmentDetails', on_delete=models.CASCADE)
+    details = models.TextField()
+    noOfSets = models.IntegerField()
+    makeModel = models.CharField(max_length=255)
+    yearOfProcurement = models.CharField(max_length=50)
+    procuredProject = models.CharField(max_length=255)
+    presentCondition = models.CharField(max_length=255)
+    remarks = models.TextField()
+
+    def __str__(self):
+        return self.details
+
+
+
+
+from django.db import models
+
+class ProjectManpower(models.Model):
+    projectid = models.IntegerField()
+    projectName = models.CharField(max_length=255)
+    projectCode = models.CharField(max_length=255)
+    principalAgency = models.CharField(max_length=255)
+    subAgency = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.projectName
+
+
+class ManpowerDetail(models.Model):
+    project = models.ForeignKey(ProjectManpower, related_name='manpowerDetails', on_delete=models.CASCADE)
+    designation = models.CharField(max_length=255)
+    noOfPersons = models.IntegerField()
+    totalMonths = models.IntegerField()
+    salaryPerMonth = models.DecimalField(max_digits=10, decimal_places=2)
+    totalSalary = models.DecimalField(max_digits=10, decimal_places=2)
+    firstYear = models.DecimalField(max_digits=10, decimal_places=2)
+    secondYear = models.DecimalField(max_digits=10, decimal_places=2)
+    thirdYear = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return self.designation
+
+
+
+
+
+from django.db import models
+
+class ProjectTravel(models.Model):
+    projectid = models.IntegerField()
+    projectName = models.CharField(max_length=255)
+    projectCode = models.CharField(max_length=255)
+    principalAgency = models.CharField(max_length=255)
+    subAgency = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.projectName
+
+class TravelDetail(models.Model):
+    project = models.ForeignKey(ProjectTravel, related_name='travelDetails', on_delete=models.CASCADE)
+    designation = models.CharField(max_length=255)
+    fromPlace = models.CharField(max_length=255)
+    toPlace = models.CharField(max_length=255)
+    distance = models.DecimalField(max_digits=10, decimal_places=2)
+    modeFare = models.DecimalField(max_digits=10, decimal_places=2)
+    noOfTrips = models.IntegerField()
+    travelExpense = models.DecimalField(max_digits=10, decimal_places=2)
+    noOfDays = models.IntegerField()
+    daRate = models.DecimalField(max_digits=10, decimal_places=2)
+    totalDA = models.DecimalField(max_digits=10, decimal_places=2)
+    totalTADA = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.designation} - {self.fromPlace} to {self.toPlace}"

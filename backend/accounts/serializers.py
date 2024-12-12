@@ -3,6 +3,38 @@ from .models import User
 from .models import ProjectProposal,Project
 from .models import *
 
+from rest_framework.parsers import MultiPartParser, FormParser
+
+
+
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+
+class UserSignupSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True, style={'input_type': 'password'})
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'password', 'role']
+
+    def validate_role(self, value):
+        """Ensure role is valid."""
+        if value not in dict(User.ROLES).keys():
+            raise serializers.ValidationError("Invalid role selected.")
+        return value
+
+    def create(self, validated_data):
+        """Create a new user."""
+        password = validated_data.pop('password')
+        user = User(**validated_data)
+        user.set_password(password)  # Hash the password
+        user.save()
+        return user
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -115,28 +147,28 @@ class QuarterlyExpenditureStatementSerializer(serializers.ModelSerializer):
 
 
 
-class ProjectCompletionReportSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProjectCompletionReport
-        fields = [
-            'id',
-            'project',
-            'title',
-            'project_code',
-            'date_of_commencement',
-            'approved_completion_date',
-            'actual_completion_date',
-            'objectives',
-            'work_programme',
-            'details_of_work_done',
-            'objectives_fulfilled',
-            'reasons_for_incomplete_scope',
-            'need_for_further_study',
-            'conclusions_and_recommendations',
-            'scope_of_application',
-            'associated_persons',
-            'final_expenditure_statement',
-        ]
+# class ProjectCompletionReportSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ProjectCompletionReport
+#         fields = [
+#             'id',
+#             'project',
+#             'title',
+#             'project_code',
+#             'date_of_commencement',
+#             'approved_completion_date',
+#             'actual_completion_date',
+#             'objectives',
+#             'work_programme',
+#             'details_of_work_done',
+#             'objectives_fulfilled',
+#             'reasons_for_incomplete_scope',
+#             'need_for_further_study',
+#             'conclusions_and_recommendations',
+#             'scope_of_application',
+#             'associated_persons',
+#             'final_expenditure_statement',
+#         ]
 
 
 
@@ -180,3 +212,215 @@ class IncrementRequestSerializer(serializers.ModelSerializer):
             'updated_at',
             'status',
         ]
+
+
+# class ProjectCompletionReportSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = ProjectCompletionReport
+#         fields = "__all__"
+        
+
+
+from rest_framework import serializers
+from .models import ProjectRevision
+
+class ProjectRevisionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectRevision
+        fields = "__all__"
+
+
+
+from rest_framework import serializers
+from .models import Project, Item
+
+from rest_framework import serializers
+from .models import ProjectFund, Item
+
+
+class ItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Item
+        exclude = ['project']  # Exclude `project` as it will be handled programmatically
+
+
+class ProjectFundSerializer(serializers.ModelSerializer):
+    items = ItemSerializer(many=True)
+
+    class Meta:
+        model = ProjectFund
+        fields = "__all__"
+
+    def validate_items(self, value):
+        if not value:
+            raise serializers.ValidationError("The 'items' field cannot be empty.")
+        return value
+
+    def create(self, validated_data):
+        # Extract `items` data and create the project
+        items_data = validated_data.pop('items', [])
+        project = ProjectFund.objects.create(**validated_data)
+
+        # Create associated items
+        for item_data in items_data:
+            Item.objects.create(project=project, **item_data)
+        return project
+
+    def update(self, instance, validated_data):
+        # Update the project
+        items_data = validated_data.pop('items', [])
+        instance.projectid = validated_data.get('projectid', instance.projectid)
+        instance.projectName = validated_data.get('projectName', instance.projectName)
+        instance.projectCode = validated_data.get('projectCode', instance.projectCode)
+        instance.companyName = validated_data.get('companyName', instance.companyName)
+        instance.statementPeriod = validated_data.get('statementPeriod', instance.statementPeriod)
+        instance.save()
+
+        # Update associated items
+        instance.items.all().delete()  # Remove old items
+        for item_data in items_data:
+            Item.objects.create(project=instance, **item_data)
+        return instance
+
+
+
+
+
+from rest_framework import serializers
+from .models import EndorsementForm
+
+class EndorsementFormSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EndorsementForm
+        fields = "__all__"
+
+
+
+from rest_framework import serializers
+from .models import QuarterlyStatusReport
+
+class QuarterlyStatusReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuarterlyStatusReport
+        fields = "__all__"
+
+
+
+from rest_framework import serializers
+from .models import ProjectCompletionReport2
+
+class ProjectCompletionReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectCompletionReport2
+        fields = "__all__"
+
+from rest_framework import serializers
+from .models import Fund
+
+class FundSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Fund
+        fields = '__all__'
+
+
+class TimelineTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TimelineTask
+        fields = '__all__'
+
+        
+from rest_framework import serializers
+from .models import ProjectExtensionReport
+
+class ProjectExtensionReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectExtensionReport
+        fields = "__all__"
+
+
+
+
+from rest_framework import serializers
+from .models import ProjectRevisionTwo
+
+class ProjectRevisionTwoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProjectRevisionTwo
+        fields = "__all__"
+
+
+
+
+from rest_framework import serializers
+from .models import ProjectEquipment, EquipmentDetail
+
+class EquipmentDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EquipmentDetail
+        exclude = ('project',)  # Exclude the 'project' field from being required
+class ProjectEquipmentSerializer(serializers.ModelSerializer):
+    equipmentDetails = EquipmentDetailSerializer(many=True)
+
+    class Meta:
+        model = ProjectEquipment
+        fields = "__all__"
+
+    def create(self, validated_data):
+        equipment_data = validated_data.pop('equipmentDetails')  # Extract equipment details
+        project = ProjectEquipment.objects.create(**validated_data)  # Create the main project
+        for equipment in equipment_data:
+            EquipmentDetail.objects.create(project=project, **equipment)  # Link each equipment to the project
+        return project
+    
+
+
+from rest_framework import serializers
+from .models import ProjectManpower, ManpowerDetail
+
+class ManpowerDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ManpowerDetail
+        # fields = '__all__'
+        exclude = ('project',)
+
+class ProjectManpowerSerializer(serializers.ModelSerializer):
+    manpowerDetails = ManpowerDetailSerializer(many=True)
+
+    class Meta:
+        model = ProjectManpower
+        fields = '__all__'
+
+    def create(self, validated_data):
+        manpower_details_data = validated_data.pop('manpowerDetails', [])
+        project = ProjectManpower.objects.create(**validated_data)
+        for detail_data in manpower_details_data:
+            ManpowerDetail.objects.create(project=project, **detail_data)
+        return project
+
+
+
+
+
+from rest_framework import serializers
+from .models import ProjectTravel, TravelDetail
+
+class TravelDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TravelDetail
+        # fields = '__all__'
+        exclude = ('project',)
+
+
+class ProjectTravelSerializer(serializers.ModelSerializer):
+    travelDetails = TravelDetailSerializer(many=True)
+
+    class Meta:
+        model = ProjectTravel
+        fields = '__all__'
+
+    def create(self, validated_data):
+        travel_details_data = validated_data.pop('travelDetails', [])
+        project = ProjectTravel.objects.create(**validated_data)
+        for travel_data in travel_details_data:
+            TravelDetail.objects.create(project=project, **travel_data)
+        return project
